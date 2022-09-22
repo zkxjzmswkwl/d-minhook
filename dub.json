@@ -7,7 +7,7 @@
 	"license": "don't care",
 	"name": "d-minhook",
 	"libs": [
-		"libs/libMinHook-x64-v110-mt",
+		"libs/libMinHook-x64-v141-md",
 		"User32"
 	],
 	"targetType": "dynamicLibrary"

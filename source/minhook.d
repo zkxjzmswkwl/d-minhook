@@ -1,5 +1,3 @@
-import core.sys.windows.windows;
-import core.sys.windows.winuser;
 
 extern (Windows)
 {

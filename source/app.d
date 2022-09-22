@@ -1,26 +1,36 @@
 import std.stdio;
+import core.runtime;
 import core.sys.windows.windows;
 import core.sys.windows.winuser;
 import minhook;
 
 /*------------------------*/
 // Target function prototype
-alias func = extern (C) int function(int);
-func funcOriginal = NULL;
+__gshared
+typeof(ourHook)* funcOriginal;
 
 /*------------------------*/
-extern (Windows) func ourHook(int i)
+// Our hook
+extern (Windows)
+size_t ourHook(int i)
 {
-  return cast(func) 500;
+  writefln!"Called from hook";
+  return funcOriginal(500);
 }
 
-/*------------------------*/
-// Setup/Place hook
-void go()
+void* go()
 {
-  MH_Initialize();
+  // Not necessary to get output if the target process already has console allocated.
+  AllocConsole();
+  freopen("CON", "w", stdout.getFP);
 
-  auto hook = MH_CreateHook(cast(LPVOID) 0x7FF72411E700, &ourHook, &funcOriginal);
+  void* moduleBase = cast(void*) GetModuleHandleA(null);
+  writefln!"Base: %X"(cast(size_t) moduleBase + 0xE700);
+
+  enum testFunc = 0xE700;
+  size_t testFuncRelative = cast(size_t)(moduleBase + testFunc);
+
+  auto hook = MH_CreateHook(cast(LPVOID) testFuncRelative, &ourHook, &funcOriginal);
   if (hook != 0)
     MessageBoxA(null, "Hook was not placed.", "!", MB_OK);
 
@@ -30,29 +40,52 @@ void go()
 
   for (;;)
   {
-    if (GetAsyncKeyState(0x5) & 1)
+    if (GetAsyncKeyState(VK_UP) & 0x01)
     {
-      writeln("Exit");
+      writeln("\nExiting\n");
       break;
     }
+
+    writeln("Loop");
+    Sleep(100);
   }
 
-  // MH_DisableHook(cast(void*)hook);
-  // MH_Uninitialize();
+  MH_DisableHook(cast(void*) hook);
+  MH_RemoveHook(cast(void*) hook);
+  MH_Uninitialize();
+
+  // Not necessary to get output if the target process already has console allocated.
+  FreeConsole();
+
+  return null;
 }
 
 /*------------------------*/
+// WINMAIN Entrypoint
 extern (Windows)
-BOOL DllMain(HMODULE module_, uint reason, void * aids)
+BOOL DllMain(HMODULE module_, uint reason, void* aids)
 {
   if (reason == DLL_PROCESS_ATTACH)
   {
-    go();
+    Runtime.initialize;
+    MH_Initialize();
+    CloseHandle(
+      CreateThread(
+        cast(SECURITY_ATTRIBUTES*) NULL,
+        cast(ulong) 0,
+        cast(LPTHREAD_START_ROUTINE) go(),
+        cast(PVOID) module_,
+        cast(uint) 0,
+        cast(uint*) NULL
+    )
+    );
   }
   else if (reason == DLL_PROCESS_DETACH)
   {
+    FreeLibraryAndExitThread(module_, 0);
     MessageBoxA(null, "Ejected.", "!", MB_OK);
+    Runtime.terminate;
   }
 
-  return true;
+  return false;
 }
