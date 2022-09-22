@@ -1,0 +1,16 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/d-minhook
+d-minhook.so
+d-minhook.dylib
+d-minhook.dll
+d-minhook.a
+d-minhook.lib
+d-minhook.pdb
+d-minhook-test-*
+*.exe
+*.o
+*.obj
+*.lst

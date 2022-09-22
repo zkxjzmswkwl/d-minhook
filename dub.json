@@ -1,0 +1,14 @@
+{
+	"authors": [
+		"zkxjzmswkwl"
+	],
+	"copyright": "no",
+	"description": "D Bindings to the Minhook library.",
+	"license": "don't care",
+	"name": "d-minhook",
+	"libs": [
+		"libs/libMinHook-x64-v110-mt",
+		"User32"
+	],
+	"targetType": "dynamicLibrary"
+}
